@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from config import settings
 from routers import auth, events
+from db import init_db
 
 LOG_DIR = Path(settings.SIEM_LOG_DIR)
 DB_PATH = Path(settings.SIEM_DB_PATH)
@@ -12,8 +13,10 @@ DB_PATH = Path(settings.SIEM_DB_PATH)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from models.models import Event, FileOffset
+
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    DB_PATH.touch(exist_ok=True)
+    init_db()
     yield
 
 
