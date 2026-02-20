@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from datetime import datetime, timezone
 from config import settings
-from routers import auth as auth_router
+from routers import auth, events
 
 LOG_DIR = Path(settings.SIEM_LOG_DIR)
 DB_PATH = Path(settings.SIEM_DB_PATH)
@@ -26,7 +26,8 @@ app.add_middleware(
     allow_credentials=False,
 )
 
-app.include_router(auth_router.router)
+app.include_router(auth.router)
+app.include_router(events.router)
 
 
 @app.get("/health")
