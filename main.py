@@ -1,11 +1,13 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pathlib import Path
 from datetime import datetime, timezone
-import os
+from config import settings
+from routers import auth as auth_router
 
-LOG_DIR = Path(os.getenv("SIEM_LOG_DIR", "/logs"))
-DB_PATH = Path(os.getenv("SIEM_DB_PATH", "/data/siem.sqlite3"))
+LOG_DIR = Path(settings.SIEM_LOG_DIR)
+DB_PATH = Path(settings.SIEM_DB_PATH)
 
 
 @asynccontextmanager
@@ -16,6 +18,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Mini-SIEM", version="0.0.1", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.SIEM_CORS_ORIGINS,
+    allow_methods=["*"],
+    allow_headers=["Authorization", "Content-Type"],
+    allow_credentials=False,
+)
+
+app.include_router(auth_router.router)
 
 
 @app.get("/health")
