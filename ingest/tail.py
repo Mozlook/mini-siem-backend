@@ -19,15 +19,29 @@ from .normalize import (
 
 def read_new_lines_since_last_offset(
     session: Session, path: str | Path
-) -> tuple[list[Event], int]:
+) -> tuple[list[Event], int, int | None]:
     fp = Path(path).resolve()
     path_key = str(fp)
 
     row = get_offset(session, path_key)
     start_offset = 0 if row is None or row.offset is None else row.offset
 
+    saved_offset = 0 if row is None or row.offset is None else row.offset
+    saved_inode = 0 if row is None else row.inode
+
     if not fp.exists():
-        return [], start_offset
+        return [], start_offset, None
+
+    stat_result = fp.stat()
+    inode = stat_result.st_ino
+    size = stat_result.st_size
+
+    if saved_inode != inode:
+        start_offset = 0
+    elif saved_offset > size:
+        start_offset = 0
+    else:
+        start_offset = saved_offset
 
     events: list[Event] = []
     new_offset = start_offset
@@ -107,4 +121,4 @@ def read_new_lines_since_last_offset(
             new_offset = line_end_offset
             current_line_start_offset = line_end_offset
 
-    return events, new_offset
+    return events, new_offset, inode
