@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     SIEM_JWT_ALG: str = "HS256"
     SIEM_DB_PATH: str = "./data/siem.sqlite3"
     SIEM_LOG_DIR: str = "./sample_logs"
+    SIEM_INGEST_ENABLED: bool = True
+    SIEM_INGEST_POLL_SECONDS: int = 2
+    SIEM_INGEST_BATCH_SIZE: int = 200
 
     model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8"
