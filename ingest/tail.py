@@ -14,7 +14,7 @@ from .utils import compute_start_offset, utc_now_iso
 
 
 def read_new_lines_since_last_offset(
-    session: Session, path: str | Path
+    session: Session, path: str | Path, *, max_events: int = 200
 ) -> tuple[list[Event], int, int | None]:
     fp = Path(path).resolve()
     path_key = str(fp)
@@ -41,6 +41,8 @@ def read_new_lines_since_last_offset(
         _ = f.seek(start_offset)
 
         while True:
+            if len(events) >= max_events:
+                break
             line = f.readline()
             if line == b"":
                 break  # EOF
