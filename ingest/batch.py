@@ -1,0 +1,60 @@
+from datetime import datetime, timezone
+from pathlib import Path
+from schemas.batch import BatchResult
+from db import SessionLocal
+from repositories.events import insert_events_batch
+from repositories.file_offsets import upsert_offset, get_offset
+from .tail import read_new_lines_since_last_offset
+
+
+def ingest_one_batch_for_file(path: str, batch_size: int) -> BatchResult:
+    path_key = str(Path(path).resolve())
+    session = SessionLocal()
+    prev_offset = 0
+    prev_inode: int | None = None
+    try:
+        row = get_offset(session, path_key)
+        if row:
+            prev_offset = row.offset or 0
+            prev_inode = row.inode
+        events, offset, inode = read_new_lines_since_last_offset(
+            session, path_key, max_events=batch_size
+        )
+
+        if inode is None:
+            session.close()
+            return BatchResult(
+                inserted_count=0, new_offset=0, inode=0, progressed=False
+            )
+        inserted_count = len(events)
+        if inserted_count > 0:
+            _ = insert_events_batch(session, events)
+
+        now_iso_utc = (
+            datetime.now(timezone.utc)
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        progressed = (row is None) or (offset != prev_offset) or (inode != prev_inode)
+
+        if progressed:
+            upsert_offset(session, path_key, inode, offset, now_iso_utc)
+
+        if progressed or inserted_count != 0:
+            session.commit()
+
+        session.close()
+        return BatchResult(
+            inserted_count=inserted_count,
+            new_offset=offset,
+            inode=inode,
+            progressed=progressed,
+        )
+    except Exception as e:
+        print(e)
+        session.rollback()
+        session.close()
+        return BatchResult(
+            inserted_count=0, new_offset=prev_offset, inode=prev_inode, progressed=False
+        )
