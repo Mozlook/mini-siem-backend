@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from pathlib import Path
-from schemas.batch import BatchResult
+from schemas.batch import BatchResult, FileResult
 from db import SessionLocal
 from repositories.events import insert_events_batch
 from repositories.file_offsets import upsert_offset, get_offset
@@ -58,3 +58,21 @@ def ingest_one_batch_for_file(path: str, batch_size: int) -> BatchResult:
         return BatchResult(
             inserted_count=0, new_offset=prev_offset, inode=prev_inode, progressed=False
         )
+
+
+def ingest_file_caught_up(
+    path: str, batch_size: int, max_batches_per_file: int
+) -> FileResult:
+    file_result = FileResult(inserted_count=0, batch_count=0)
+    remaining = max_batches_per_file
+    while True:
+        remaining -= 1
+        batch_result = ingest_one_batch_for_file(path, batch_size)
+        file_result.inserted_count += batch_result.inserted_count
+        file_result.batch_count += 1
+        if (
+            not batch_result.progressed
+            or batch_result.inserted_count < batch_size
+            or max_batches_per_file <= 0
+        ):
+            return file_result
