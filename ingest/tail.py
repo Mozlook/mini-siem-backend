@@ -8,6 +8,7 @@ from sqlmodel import Session
 
 from models.models import Event
 from repositories.file_offsets import get_offset
+from schemas.batch import Stats, TailResult
 
 from .normalize import build_event_mvp
 from .utils import compute_start_offset, utc_now_iso
@@ -15,16 +16,16 @@ from .utils import compute_start_offset, utc_now_iso
 
 def read_new_lines_since_last_offset(
     session: Session, path: str | Path, *, max_events: int = 200
-) -> tuple[list[Event], int, int | None]:
+) -> TailResult:
     fp = Path(path).resolve()
     path_key = str(fp)
-
+    stats = Stats()
     row = get_offset(session, path_key)
     saved_offset = 0 if row is None or row.offset is None else row.offset
     saved_inode = None if row is None else row.inode
 
     if not fp.exists():
-        return [], saved_offset, None
+        return TailResult(events=[], new_offset=saved_offset, inode=None, stats=stats)
 
     st = fp.stat()
     inode = st.st_ino
@@ -50,10 +51,12 @@ def read_new_lines_since_last_offset(
             line_end_offset = f.tell()
 
             if not line.endswith(b"\n"):
+                stats.incomplete_lines += 1
                 _ = f.seek(current_line_start_offset)
                 break
 
             if line.strip() == b"":
+                stats.empty_lines += 1
                 new_offset = line_end_offset
                 current_line_start_offset = line_end_offset
                 continue
@@ -61,11 +64,13 @@ def read_new_lines_since_last_offset(
             try:
                 parsed_obj: object = json.loads(line)
             except json.JSONDecodeError:
+                stats.json_errors += 1
                 new_offset = line_end_offset
                 current_line_start_offset = line_end_offset
                 continue
 
             if not isinstance(parsed_obj, dict):
+                stats.non_object += 1
                 new_offset = line_end_offset
                 current_line_start_offset = line_end_offset
                 continue
@@ -86,4 +91,4 @@ def read_new_lines_since_last_offset(
             new_offset = line_end_offset
             current_line_start_offset = line_end_offset
 
-    return events, new_offset, inode
+    return TailResult(events=events, new_offset=new_offset, inode=inode, stats=stats)
