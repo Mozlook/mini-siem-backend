@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from pathlib import Path
-from schemas.batch import BatchResult, FileResult, Stats
+from schemas.ingest import BatchResult, FileResult, Stats
 from db import SessionLocal
 from repositories.events import insert_events_batch
 from repositories.file_offsets import upsert_offset, get_offset

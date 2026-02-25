@@ -8,7 +8,7 @@ from sqlmodel import Session
 
 from models.models import Event
 from repositories.file_offsets import get_offset
-from schemas.batch import Stats, TailResult
+from schemas.ingest import Stats, TailResult
 
 from .normalize import build_event_mvp
 from .utils import compute_start_offset, utc_now_iso
