@@ -92,5 +92,6 @@ trap - EXIT
 
 echo
 echo "=== Dev server: start with --reload (CTRL+C to stop) ==="
-exec python -m uvicorn main:app --reload --host "$HOST" --port "$PORT"
+# exec python -m uvicorn main:app --reload --host "$HOST" --port "$PORT"
+exec python -m uvicorn main:app --host "$HOST" --port "$PORT"
 

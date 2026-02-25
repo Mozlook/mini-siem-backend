@@ -1,9 +1,11 @@
+import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pathlib import Path
 from datetime import datetime, timezone
 from config import settings
+from ingest.ingest import ingest_loop
 from routers import auth, events
 from db import init_db
 
@@ -17,7 +19,28 @@ async def lifespan(app: FastAPI):
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     init_db()
-    yield
+    stop_event = threading.Event()
+    thread: threading.Thread | None = None
+
+    app.state.ingest_stop_event = stop_event
+    app.state.ingest_thread = None
+
+    if settings.SIEM_INGEST_ENABLED:
+        thread = threading.Thread(
+            target=ingest_loop,
+            args=(stop_event,),
+            name="mini-siem-ingestor",
+            daemon=True,
+        )
+        thread.start()
+        app.state.ingest_thread = thread
+
+    try:
+        yield
+    finally:
+        stop_event.set()
+        if thread is not None:
+            thread.join(timeout=5)
 
 
 app = FastAPI(title="Mini-SIEM", version="0.0.1", lifespan=lifespan)

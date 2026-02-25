@@ -38,5 +38,5 @@ def ingest_loop(stop_event: Event) -> None:
             settings.SIEM_INGEST_BATCH_SIZE,
             settings.SIEM_INGEST_MAX_BATCHES_PER_FILE,
         )
-        print(ingest_result)
+        # print(ingest_result)
         _ = stop_event.wait(timeout=settings.SIEM_INGEST_POLL_SECONDS)
