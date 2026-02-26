@@ -1,7 +1,6 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from posix import truncate
 
 from config import settings
 
@@ -46,43 +45,38 @@ def safe_json_dumps(value: object) -> str | None:
         return None
 
 
-def get_text(d: dict[str, object], key: str) -> str | None:
-    v = d.get(key)
-    if v is None:
-        return None
-    if isinstance(v, str):
-        return v if v != "" else None
-    if isinstance(v, (int, float, bool)):
-        return str(v)
-    return None
-
-
-def get_int(d: dict[str, object], key: str) -> int | None:
-    v = d.get(key)
-    if isinstance(v, int):
-        return v
-    if isinstance(v, str) and v.isdigit():
-        return int(v)
-    return None
-
-
-def get_float(d: dict[str, object], key: str) -> float | None:
-    v = d.get(key)
-    if isinstance(v, (int, float)):
-        return float(v)
-    if isinstance(v, str):
-        try:
-            return float(v)
-        except ValueError:
-            return None
-    return None
-
-
-def cap_text(value: str | None, max_len: int) -> str | None:
+def cap_text(
+    value: str | None,
+    max_len: int,
+    *,
+    strip: bool = False,
+    empty_to_none: bool = False,
+) -> str | None:
     if value is None:
         return None
+
+    if strip:
+        value = value.strip()
+
+    if empty_to_none and value == "":
+        return None
+
     if max_len <= 0:
         return value
+
     if len(value) <= max_len:
         return value
+
     return value[:max_len]
+
+
+def dt_to_utc_rfc3339_z(dt: datetime) -> str:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+
+    s = dt.isoformat(timespec="microseconds")
+    if s.endswith("+00:00"):
+        s = s[:-6] + "Z"
+    return s

@@ -12,7 +12,7 @@ from repositories.file_offsets import get_offset
 from schemas.ingest import Stats, TailResult
 from schemas.incoming import IncomingLogEvent
 
-from .normalize import build_event_mvp
+from .normalize import build_event
 from .utils import compute_start_offset, utc_now_iso
 
 
@@ -87,13 +87,9 @@ def read_new_lines_since_last_offset(
                 current_line_start_offset = line_end_offset
                 continue
 
-            parsed_normalized = cast(
-                dict[str, object], incoming.model_dump(mode="json", exclude_none=True)
-            )
-
             events.append(
-                build_event_mvp(
-                    parsed_normalized,
+                build_event(
+                    incoming,
                     raw_line=line,
                     file_path=fp,
                     source_file=path_key,
