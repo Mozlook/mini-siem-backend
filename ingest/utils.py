@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from posix import truncate
 
 from config import settings
 
@@ -75,3 +76,13 @@ def get_float(d: dict[str, object], key: str) -> float | None:
         except ValueError:
             return None
     return None
+
+
+def cap_text(value: str | None, max_len: int) -> str | None:
+    if value is None:
+        return None
+    if max_len <= 0:
+        return value
+    if len(value) <= max_len:
+        return value
+    return value[:max_len]
