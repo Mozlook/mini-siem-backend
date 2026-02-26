@@ -65,7 +65,7 @@ def read_new_lines_since_last_offset(
 
             try:
                 parsed_obj: object = json.loads(line)
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, UnicodeDecodeError):
                 stats.json_errors += 1
                 new_offset = line_end_offset
                 current_line_start_offset = line_end_offset
