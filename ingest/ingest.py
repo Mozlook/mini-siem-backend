@@ -23,6 +23,7 @@ def ingest_once(
             ingest_result.stats.json_errors += file_result.stats.json_errors
             ingest_result.stats.incomplete_lines += file_result.stats.incomplete_lines
             ingest_result.stats.empty_lines += file_result.stats.empty_lines
+            ingest_result.stats.validation_errors += file_result.stats.validation_errors
             ingest_result.per_file[file_path] = file_result
         except Exception as e:
             ingest_result.files_failed += 1

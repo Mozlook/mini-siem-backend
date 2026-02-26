@@ -5,10 +5,12 @@ from pathlib import Path
 from typing import cast
 
 from sqlmodel import Session
+from pydantic import ValidationError
 
 from models.models import Event
 from repositories.file_offsets import get_offset
 from schemas.ingest import Stats, TailResult
+from schemas.incoming import IncomingLogEvent
 
 from .normalize import build_event_mvp
 from .utils import compute_start_offset, utc_now_iso
@@ -76,10 +78,22 @@ def read_new_lines_since_last_offset(
                 continue
 
             parsed = cast(dict[str, object], parsed_obj)
+            try:
+                incoming = IncomingLogEvent.model_validate(parsed)
+
+            except ValidationError:
+                stats.validation_errors += 1
+                new_offset = line_end_offset
+                current_line_start_offset = line_end_offset
+                continue
+
+            parsed_normalized = cast(
+                dict[str, object], incoming.model_dump(mode="json", exclude_none=True)
+            )
 
             events.append(
                 build_event_mvp(
-                    parsed,
+                    parsed_normalized,
                     raw_line=line,
                     file_path=fp,
                     source_file=path_key,

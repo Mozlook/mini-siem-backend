@@ -8,6 +8,7 @@ class Stats(SQLModel):
     json_errors: int = 0
     non_object: int = 0
     incomplete_lines: int = 0
+    validation_errors: int = 0
 
 
 class TailResult(SQLModel):

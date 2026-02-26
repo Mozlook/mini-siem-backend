@@ -84,6 +84,7 @@ def ingest_file_caught_up(
         file_result.stats.json_errors += batch_result.stats.json_errors
         file_result.stats.incomplete_lines += batch_result.stats.incomplete_lines
         file_result.stats.empty_lines += batch_result.stats.empty_lines
+        file_result.stats.validation_errors += batch_result.stats.validation_errors
         if (
             not batch_result.progressed
             or batch_result.inserted_count < batch_size

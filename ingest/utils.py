@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,11 +15,6 @@ def compute_start_offset(
     inode: int,
     size: int,
 ) -> int:
-    """
-    S3.4:
-    - jeśli inode się zmienił -> reset offset 0
-    - jeśli size < offset -> reset offset 0
-    """
     if saved_inode is not None and saved_inode != inode:
         return 0
     if saved_offset > size:
@@ -30,10 +23,6 @@ def compute_start_offset(
 
 
 def app_from_path(file_path: Path) -> str | None:
-    """
-    Dla struktury: /logs/<APP>/<APP>.jsonl
-    app = pierwszy segment relatywnie do SIEM_LOG_DIR.
-    """
     log_root = Path(settings.SIEM_LOG_DIR).resolve()
     fp = file_path.resolve()
     try:
