@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Annotated
 
 from db import SessionLocal
@@ -11,23 +11,25 @@ from schemas.apiResponse import EventDetail, EventListItem
 
 router = APIRouter(prefix="/events", tags=["events"])
 
+MAX_LIMIT = 500
+
 
 @router.get("", response_model=list[EventListItem])
 def get_events(
     _: Annotated[None, Depends(require_admin)],
-    from_: datetime | None = None,
-    to: datetime | None = None,
-    app: list[str] | None = None,
-    event_type: list[str] | None = None,
-    level: list[str] | None = None,
-    user_id: str | None = None,
-    src_ip: str | None = None,
-    request_id: str | None = None,
-    http_status: int | None = None,
-    q: str | None = None,
-    limit: int = 200,
-    before_ts: datetime | None = None,
-    before_id: int | None = None,
+    from_: Annotated[datetime | None, Query(alias="from")] = None,
+    to: Annotated[datetime | None, Query()] = None,
+    app: Annotated[list[str] | None, Query()] = None,
+    event_type: Annotated[list[str] | None, Query()] = None,
+    level: Annotated[list[str] | None, Query()] = None,
+    user_id: Annotated[str | None, Query()] = None,
+    src_ip: Annotated[str | None, Query()] = None,
+    request_id: Annotated[str | None, Query()] = None,
+    http_status: Annotated[int | None, Query()] = None,
+    q: Annotated[str | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = 200,
+    before_ts: Annotated[datetime | None, Query()] = None,
+    before_id: Annotated[int | None, Query(ge=1)] = None,
 ):
     with SessionLocal() as session:
         try:
@@ -54,7 +56,7 @@ def get_events(
             )
 
 
-@router.get("{id}", response_model=EventDetail)
+@router.get("/{id}", response_model=EventDetail)
 def get_event_by_id(
     _: Annotated[None, Depends(require_admin)],
     id: int,

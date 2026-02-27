@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from config import settings
 from ingest.ingest import ingest_loop
-from routers import auth, events
+from routers import auth, events, metadata
 from db import init_db
 
 LOG_DIR = Path(settings.SIEM_LOG_DIR)
@@ -54,6 +54,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(events.router)
+app.include_router(metadata.router)
 
 
 @app.get("/health")
