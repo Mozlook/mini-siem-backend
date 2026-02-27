@@ -1,6 +1,6 @@
 import os
 
-from sqlmodel import select, Session
+from sqlmodel import select, Session, col
 
 
 from handlers.exceptions import LogDirUnavailableError
@@ -23,11 +23,16 @@ def get_apps_from_fs(log_dir: str) -> list[str]:
 
 
 def get_event_types_handler(session: Session, app: str | None = None) -> list[str]:
-    stmt = select(Event.event_type).distinct()
+    stmt = (
+        select(Event.event_type)
+        .where(col(Event.event_type).is_not(None))
+        .where(col(Event.event_type) != "")
+        .distinct()
+        .order_by(col(Event.event_type))
+    )
+
     if app is not None:
         stmt = stmt.where(Event.app == app)
-    stmt = stmt.where(Event.event_type is not None).order_by(Event.event_type)
 
-    event_types = session.exec(stmt).all()
-
-    return list(event_types)
+    rows = session.exec(stmt).all()
+    return [et for et in rows if et is not None and et != ""]
