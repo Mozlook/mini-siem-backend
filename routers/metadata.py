@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Annotated
 
-from sqlmodel import Session
 
 from config import settings
 from db import SessionLocal
@@ -25,7 +24,7 @@ def get_apps(
 @router.get("/event-types")
 def get_event_types(
     _: Annotated[None, Depends(require_admin)],
-    session: Annotated[Session, Depends(SessionLocal)],
     app: str | None = None,
 ) -> list[str]:
-    return get_event_types_handler(session, app)
+    with SessionLocal() as session:
+        return get_event_types_handler(session, app)
