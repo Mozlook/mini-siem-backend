@@ -5,7 +5,7 @@ from typing import Annotated
 from db import SessionLocal
 
 from deps import require_admin
-from handlers.events import get_event_details
+from handlers.events import get_event_details, get_events_all
 from handlers.exceptions import EventDetailsNotFound
 from schemas.apiResponse import EventDetail, EventListItem
 
@@ -29,7 +29,29 @@ def get_events(
     before_ts: datetime | None = None,
     before_id: int | None = None,
 ):
-    return []
+    with SessionLocal() as session:
+        try:
+            return get_events_all(
+                session,
+                from_,
+                to,
+                app,
+                event_type,
+                level,
+                user_id,
+                src_ip,
+                request_id,
+                http_status,
+                q,
+                limit,
+                before_ts,
+                before_id,
+            )
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="before_ts and before_id must be provided together",
+            )
 
 
 @router.get("{id}", response_model=EventDetail)
