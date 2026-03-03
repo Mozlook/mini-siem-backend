@@ -1,4 +1,5 @@
-from sqlmodel import SQLModel, Field
+from datetime import datetime
+from sqlmodel import TIMESTAMP, SQLModel, Field
 
 from models.models import Event
 
@@ -39,3 +40,11 @@ class IngestResult(SQLModel):
     total_batches: int = 0
     stats: Stats = Field(default_factory=Stats)
     per_file: dict[str, FileResult] = Field(default_factory=dict)
+
+
+class IngestState(SQLModel):
+    last_ingest_ok_at: datetime | None
+    last_ingest_error: str | None
+    last_retention_run_at: datetime | None
+    last_retention_deleted: int = 0
+    last_retention_error: str | None

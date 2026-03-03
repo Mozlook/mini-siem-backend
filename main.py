@@ -8,6 +8,7 @@ from config import settings
 from ingest.ingest import ingest_loop
 from routers import auth, events, metadata
 from db import init_db
+from schemas.ingest import IngestState
 
 LOG_DIR = Path(settings.SIEM_LOG_DIR)
 DB_PATH = Path(settings.SIEM_DB_PATH)
@@ -28,7 +29,7 @@ async def lifespan(app: FastAPI):
     if settings.SIEM_INGEST_ENABLED:
         thread = threading.Thread(
             target=ingest_loop,
-            args=(stop_event,),
+            args=(stop_event, app.state.ingest_lock, app.state.ingest_state),
             name="mini-siem-ingestor",
             daemon=True,
         )
@@ -44,6 +45,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Mini-SIEM", version="0.0.1", lifespan=lifespan)
+
+app.state.ingest_lock = threading.Lock()
+app.state.ingest_state = IngestState(
+    last_ingest_ok_at=None,
+    last_ingest_error=None,
+    last_retention_run_at=None,
+    last_retention_deleted=0,
+    last_retention_error=None,
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.SIEM_CORS_ORIGINS,
