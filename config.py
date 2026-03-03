@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     SIEM_MAX_HTTP_PATH_LEN: int = 2000
     SIEM_MAX_RAW_JSON_LEN: int = 200000
     SIEM_MAX_DATA_JSON_LEN: int = 50000
+    SIEM_RENENTION_DAYS: int = 30
+    SIEM_RENENTION_ENABLED: bool = True
+    SIEM_RENENTION_RUN_EVERY_SECONDS: int = 3600
 
     model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8"

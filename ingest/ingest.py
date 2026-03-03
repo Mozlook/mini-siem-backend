@@ -1,6 +1,9 @@
 from threading import Event
+from time import monotonic
 from config import settings
+from db import SessionLocal
 from ingest.batch import ingest_file_caught_up
+from jobs.retention import run_retention_once
 from .discovery import discover_jsonl_files
 from schemas.ingest import IngestResult
 
@@ -33,11 +36,24 @@ def ingest_once(
 
 
 def ingest_loop(stop_event: Event) -> None:
+    next_retention_due = monotonic() + settings.SIEM_RENENTION_RUN_EVERY_SECONDS
     while not stop_event.is_set():
         ingest_result = ingest_once(
             settings.SIEM_LOG_DIR,
             settings.SIEM_INGEST_BATCH_SIZE,
             settings.SIEM_INGEST_MAX_BATCHES_PER_FILE,
         )
+        if settings.SIEM_RENENTION_ENABLED and monotonic() >= next_retention_due:
+            with SessionLocal() as session:
+                try:
+                    deleted = run_retention_once(session, settings.SIEM_RENENTION_DAYS)
+                    print(f"retention deleted {deleted} rows")
+                except Exception:
+                    print("retention failed")
+                finally:
+                    next_retention_due = (
+                        monotonic() + settings.SIEM_RENENTION_RUN_EVERY_SECONDS
+                    )
+
         # print(ingest_result)
         _ = stop_event.wait(timeout=settings.SIEM_INGEST_POLL_SECONDS)
