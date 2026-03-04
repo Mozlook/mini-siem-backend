@@ -74,3 +74,8 @@ class IngestorStaleError(ReadyCheckError):
             },
             message="Ingestor is stale",
         )
+
+
+class MetricsUnavailableError(Exception):
+    def __init__(self, message: str = "Metrics not available"):
+        super().__init__(message)

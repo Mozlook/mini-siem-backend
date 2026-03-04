@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from config import settings
 from ingest.ingest import ingest_loop
-from routers import auth, events, metadata, ready
+from routers import auth, events, metadata, ready, metrics
 from db import init_db
 from schemas.ingest import IngestState
 
@@ -67,6 +67,7 @@ app.include_router(auth.router)
 app.include_router(events.router)
 app.include_router(metadata.router)
 app.include_router(ready.router)
+app.include_router(metrics.router)
 
 
 @app.get("/health")
