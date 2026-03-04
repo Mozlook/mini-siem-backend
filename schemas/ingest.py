@@ -1,5 +1,7 @@
-from datetime import datetime
-from sqlmodel import TIMESTAMP, SQLModel, Field
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from sqlmodel import SQLModel, Field
 
 from models.models import Event
 
@@ -42,9 +44,33 @@ class IngestResult(SQLModel):
     per_file: dict[str, FileResult] = Field(default_factory=dict)
 
 
+class IngestMetrics(SQLModel):
+    files_scanned: int = 0
+    files_failed: int = 0
+    total_inserted: int = 0
+    total_batches: int = 0
+    stats: Stats = Field(default_factory=Stats)
+
+    @classmethod
+    def from_ingest_result(cls, r: IngestResult) -> IngestMetrics:
+        return cls(
+            files_scanned=r.files_scanned,
+            files_failed=r.files_failed,
+            total_inserted=r.total_inserted,
+            total_batches=r.total_batches,
+            stats=Stats(**r.stats.model_dump()),
+        )
+
+
 class IngestState(SQLModel):
-    last_ingest_ok_at: datetime | None
-    last_ingest_error: str | None
-    last_retention_run_at: datetime | None
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    metrics_total: IngestMetrics = Field(default_factory=IngestMetrics)
+    metrics_last: IngestMetrics = Field(default_factory=IngestMetrics)
+
+    last_ingest_ok_at: datetime | None = None
+    last_ingest_error: str | None = None
+
+    last_retention_run_at: datetime | None = None
     last_retention_deleted: int = 0
-    last_retention_error: str | None
+    last_retention_error: str | None = None

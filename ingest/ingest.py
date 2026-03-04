@@ -7,7 +7,7 @@ from db import SessionLocal
 from ingest.batch import ingest_file_caught_up
 from jobs.retention import run_retention_once
 from .discovery import discover_jsonl_files
-from schemas.ingest import IngestResult, IngestState
+from schemas.ingest import IngestResult, IngestState, IngestMetrics
 
 
 def ingest_once(
@@ -48,13 +48,31 @@ def ingest_loop(
                 settings.SIEM_INGEST_BATCH_SIZE,
                 settings.SIEM_INGEST_MAX_BATCHES_PER_FILE,
             )
+
+            last = IngestMetrics.from_ingest_result(ingest_result)
+            now = datetime.now(timezone.utc)
+
             with ingest_lock:
-                ingest_state.last_ingest_ok_at = datetime.now(timezone.utc)
+                ingest_state.last_ingest_ok_at = now
                 ingest_state.last_ingest_error = None
+
+                ingest_state.metrics_last = last
+
+                total = ingest_state.metrics_total
+                total.files_scanned += last.files_scanned
+                total.files_failed += last.files_failed
+                total.total_inserted += last.total_inserted
+                total.total_batches += last.total_batches
+
+                total.stats.empty_lines += last.stats.empty_lines
+                total.stats.json_errors += last.stats.json_errors
+                total.stats.non_object += last.stats.non_object
+                total.stats.incomplete_lines += last.stats.incomplete_lines
+                total.stats.validation_errors += last.stats.validation_errors
+
         except Exception as e:
             with ingest_lock:
                 ingest_state.last_ingest_error = str(e)
-
         if settings.SIEM_RENENTION_ENABLED and monotonic() >= next_retention_due:
             with SessionLocal() as session:
                 try:
