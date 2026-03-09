@@ -5,15 +5,15 @@ services:
     restart: unless-stopped
 
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8011:8000"
+
+    env_file:
+      - .env
 
     environment:
       SIEM_DB_PATH: /data/siem.sqlite3
       SIEM_LOG_DIR: /logs
-
-      # SIEM_ADMIN_PASSWORD_HASH: "..."
-      # SIEM_JWT_SECRET: "..."
-      # SIEM_CORS_ORIGINS: "https://twoj-frontend.netlify.app"
+      SIEM_ROOT_PATH: /siem
 
     volumes:
       - /srv/siem/data:/data
